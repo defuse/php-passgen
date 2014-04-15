@@ -57,7 +57,7 @@ class PasswordGenerator
         {
             if($randIdx >= count($random))
             {
-                $random = self::getRandomInts(2*($length - count($password)));
+                $random = self::getRandomInts(2*($length - strlen($password)));
                 $randIdx = 0;
             }
 
