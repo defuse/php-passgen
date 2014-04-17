@@ -124,5 +124,6 @@ class PasswordGenerator
         }
         return $ints;
     }
+
 }
 ?>
