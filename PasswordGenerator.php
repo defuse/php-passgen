@@ -111,12 +111,12 @@ class PasswordGenerator
     {
         $rawBinary = mcrypt_create_iv($numInts * PHP_INT_SIZE, MCRYPT_DEV_URANDOM);
         $ints = array();
-        for($i = 0; $i < $numInts; $i+=PHP_INT_SIZE)
+        for($i = 0; $i < $numInts; ++$i)
         {
             $thisInt = 0;
-            for($j = 0; $j < PHP_INT_SIZE; $j++)
+            for($j = 0; $j < PHP_INT_SIZE; ++$j)
             {
-                $thisInt = ($thisInt << 8) | (ord($rawBinary[$i+$j]) & 0xFF);
+                $thisInt = ($thisInt << 8) | (ord($rawBinary[$i * PHP_INT_SIZE + $j]) & 0xFF);
             }
             // Absolute value in two's compliment (with min int going to zero)
             $thisInt = $thisInt & PHP_INT_MAX;
