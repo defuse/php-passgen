@@ -93,7 +93,7 @@
     }
 
     for ($i = 0; $i < 1000; $i++) {
-        $ints = PasswordGenerator::getRandomInts(0);
+        $ints = PasswordGenerator::getRandomInts($i);
         $count = count($ints);
         if ($count != $i) {
             failTest("$i random ints is $count and not $i");
