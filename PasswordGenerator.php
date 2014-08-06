@@ -107,7 +107,7 @@ class PasswordGenerator
     }
 
     // Returns an array of $numInts random integers between 0 and PHP_INT_MAX
-    private static function getRandomInts($numInts)
+    public static function getRandomInts($numInts)
     {
         $rawBinary = mcrypt_create_iv($numInts * PHP_INT_SIZE, MCRYPT_DEV_URANDOM);
         $ints = array();

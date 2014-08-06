@@ -92,6 +92,15 @@
         failTest("Improper usage does not return false.");
     }
 
+    for ($i = 0; $i < 1000; $i++) {
+        $ints = PasswordGenerator::getRandomInts(0);
+        $count = count($ints);
+        if ($count != $i) {
+            failTest("$i random ints is $count and not $i");
+        }
+    }
+        
+
     echo "ALL TESTS PASS!\n";
     exit(0);
 
