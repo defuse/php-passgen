@@ -1,0 +1,19 @@
+{
+    "name": "defuse/php-passgen",
+    "description": "PHP Random Password Generator Library",
+    "license": "MIT",
+    "keywords": ["security", "passwords", "random", "generate"],
+    "authors": [
+        {
+            "name": "Taylor Hornby",
+            "email": "havoc@defuse.ca"
+        }
+    ],
+    "autoload": {
+        "files": ["PasswordGenerator.php"]
+    },
+    "require": {
+        "php":  ">=5.4.0",
+        "ext-mcrypt":  "*"
+    }
+}
