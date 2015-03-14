@@ -3,7 +3,7 @@ php-passgen
 
 [![Build Status](https://travis-ci.org/defuse/php-passgen.svg?branch=master)](https://travis-ci.org/defuse/php-passgen)
 
-A library for generating cryptographically secure passwords in PHP.
+A MIT-licensed library for generating cryptographically secure passwords in PHP.
 
 Audit Status
 -------------
