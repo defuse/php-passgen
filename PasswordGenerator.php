@@ -28,6 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+class ExtremelyUnlikelyRandomnessException extends Exception {}
+
 class PasswordGenerator
 {
     public static function getASCIIPassword($length)
@@ -94,11 +96,51 @@ class PasswordGenerator
 
             // Guarantee termination
             $iterLimit--;
-            if($iterLimit <= 0)
-                return false;
+            if($iterLimit <= 0) {
+                throw new ExtremelyUnlikelyRandomnessException("Hit iteration limit when generating password.");
+            }
         }
 
         return $password;
+    }
+
+    // FIXME: This function needs unit tests!
+    public static function getRandomInt($min_inclusive, $max_inclusive)
+    {
+        if ($min_inclusive > $max_inclusive) {
+            throw new InvalidArgumentException("min is greater than max.");
+        }
+
+        if ($min_inclusive == $max_inclusive) {
+            return $min_inclusive;
+        }
+
+        $range = $max_inclusive - $min_inclusive;
+        $mask = self::getMinimalBitMask($range);
+
+        $random = self::getRandomInts(10);
+        $randIdx = 0;
+
+        $iterLimit = 100;
+        while (1) {
+            /* Replenish the random integers if we ran out. */
+            if ($randIdx >= count($random)) {
+                $random = self::getRandomInts(10);
+                $randIdx = 0;
+            }
+
+            $offset = $random[$randIdx++] & $mask;
+            if ($offset <= $range) {
+                return $min_inclusive + $offset;
+            }
+
+            $iterLimit--;
+            if ($iterLimit <= 0) {
+                throw new ExtremelyUnlikelyRandomnessException("Hit iteration limit when generating random integer.");
+            }
+
+            echo "LIMIT: $iterLimit \n";
+        }
     }
 
     // Returns the character at index $index in $string in constant time.
@@ -122,11 +164,13 @@ class PasswordGenerator
     // $toRepresent must be an integer greater than or equal to 1.
     private static function getMinimalBitMask($toRepresent)
     {
-        if($toRepresent < 1)
-            return false;
+        if($toRepresent < 1) {
+            throw new InvalidArgumentException("Non-positive integer passed to getMinimalBitMask.");
+        }
         $mask = 0x1;
-        while($mask < $toRepresent)
+        while($mask < $toRepresent) {
             $mask = ($mask << 1) | 1;
+        }
         return $mask;
     }
 
