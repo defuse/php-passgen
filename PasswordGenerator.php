@@ -79,7 +79,7 @@ class PasswordGenerator
         // It is extremely unlikely (about 2^-64) that more than $length*64 random ints are needed.
         $iterLimit = max($length, $length * 64);   // If length is close to PHP_INT_MAX we don't want to overflow.
         $randIdx = 0;
-        while(strlen($password) < $length)
+        while(self::safeStrlen($password) < $length)
         {
             if($randIdx >= count($random))
             {
@@ -194,6 +194,14 @@ class PasswordGenerator
             $ints[] = $thisInt;
         }
         return $ints;
+    }
+    
+    public static function safeStrlen($str)
+    {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($str, '8bit');
+        }
+        return strlen($str);
     }
 
 }
