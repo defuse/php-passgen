@@ -138,8 +138,6 @@ class PasswordGenerator
             if ($iterLimit <= 0) {
                 throw new ExtremelyUnlikelyRandomnessException("Hit iteration limit when generating random integer.");
             }
-
-            echo "LIMIT: $iterLimit \n";
         }
     }
 
