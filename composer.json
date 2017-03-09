@@ -10,10 +10,10 @@
         }
     ],
     "autoload": {
-        "files": ["PasswordGenerator.php"]
+        "classmap": ["PasswordGenerator.php"]
     },
     "require": {
-        "php":  ">=5.4.0",
+        "php":  ">=5.3.0",
         "ext-mcrypt":  "*"
     }
 }
