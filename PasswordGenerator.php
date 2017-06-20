@@ -179,7 +179,14 @@ class PasswordGenerator
         if ($numInts <= 0) {
             return $ints;
         }
-        $rawBinary = mcrypt_create_iv($numInts * PHP_INT_SIZE, MCRYPT_DEV_URANDOM);
+        //BC Support for versions below 7.x.x
+        if(PHP_MAJOR_VERSION < 7){
+            $rawBinary = mcrypt_create_iv($numInts * PHP_INT_SIZE, MCRYPT_DEV_URANDOM);
+        }
+        else{
+            $rawBinary = random_bytes($numInts * PHP_INT_SIZE);
+        }
+
         for($i = 0; $i < $numInts; ++$i)
         {
             $thisInt = 0;
