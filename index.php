@@ -9,6 +9,11 @@
     $hex = PasswordGenerator::getHexPassword(64);
     $alpha = PasswordGenerator::getAlphaNumericPassword(64);
     $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), 64);
+
     echo $ascii, "\n", $hex, "\n", $alpha, "\n", $custom, "\n";
+
+    $number = PasswordGenerator::getRandomInts(1);
+
+    echo $number[0], "\n";
 
 ?>
