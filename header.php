@@ -5,4 +5,3 @@
         $EOL = '<br>';
     }
 	require_once('PasswordGenerator.php');
-    echo $parameters['title'];

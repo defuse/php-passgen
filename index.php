@@ -1,9 +1,9 @@
 <?php
     $parameters = [];
 
-    $parameters['title'] = "Generate Passwords:$EOL$EOL";
 	require_once('header.php');
-    require_once('PasswordGenerator.php');
+    $parameters['title'] = "Generate Passwords:$EOL$EOL";
+    echo $parameters['title'];
 
     $ascii = PasswordGenerator::getASCIIPassword(64);
     $hex = PasswordGenerator::getHexPassword(64);
