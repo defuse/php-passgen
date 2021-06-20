@@ -5,14 +5,16 @@
     $parameters['title'] = "Generate Passwords:$EOL$EOL";
     echo $parameters['title'];
 
-    $ascii = PasswordGenerator::getASCIIPassword(64);
-    $hex = PasswordGenerator::getHexPassword(64);
-    $alpha = PasswordGenerator::getAlphaNumericPassword(64);
-    $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), 64);
+    $len = 64;
+    $ascii = PasswordGenerator::getASCIIPassword($len);
+    $hex = PasswordGenerator::getHexPassword($len);
+    $alpha = PasswordGenerator::getAlphaNumericPassword($len);
+    $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), $len);
     $number = PasswordGenerator::getRandomInts(1);
 
     if($EOL == '<br>')
     {
+        echo 'len: 64';
         echo '<div style="font-family: monospace">';
         echo 'ASCII', $EOL, $ascii, $EOL, $EOL, 'Hex', $EOL, $hex, $EOL, $EOL, 
             'AlphaNumeric', $EOL, $alpha, $EOL, $EOL, 'Custom', $EOL, $custom, $EOL, $EOL, 
