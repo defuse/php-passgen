@@ -1,8 +1,9 @@
 <?php
     $parameters = [];
     
-    $parameters['title'] = "Sample Passwords:\n\n";
 	require_once('header.php');
+    $parameters['title'] = "Sample Passwords:\n\n";
+    echo $parameters['title'];
 
     function failTest($msg)
     {
