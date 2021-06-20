@@ -27,3 +27,4 @@
         echo '</div>';
     }
 ?>
+<link rel="icon" type="image/png" href="/php-passgen/favicon.png"/>
