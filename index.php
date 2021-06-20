@@ -14,7 +14,7 @@
 
     if($EOL == '<br>')
     {
-        echo 'len: 64', $EOL;
+        echo 'len: 64', $EOL, $EOL;
         echo '<div style="font-family: monospace">';
         echo 'ASCII', $EOL, $ascii, $EOL, $EOL, 'Hex', $EOL, $hex, $EOL, $EOL, 
             'AlphaNumeric', $EOL, $alpha, $EOL, $EOL, 'Custom', $EOL, $custom, $EOL, $EOL, 
