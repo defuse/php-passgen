@@ -14,7 +14,9 @@
     if($EOL == '<br>') {
         echo '<div style="font-family: monospace">';
     }
-    echo $ascii, $EOL, $hex, $EOL, $alpha, $EOL, $custom, $EOL, $number[0], $EOL;
+    echo 'ASCII: ', $ascii, $EOL, 'Hex: ', $hex, $EOL, 
+        'AlphaNumeric: ', $alpha, $EOL, 'Custom: ', $custom, $EOL, 
+        'Numeric: ', $number[0], $EOL;
     if($EOL == '<br>') {
         echo '</div>';
     }
