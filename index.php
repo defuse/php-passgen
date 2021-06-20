@@ -11,6 +11,11 @@
     $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), 64);
     $number = PasswordGenerator::getRandomInts(1);
 
+    if($EOL == '<br>') {
+        echo '<div style="font-family: monospace">';
+    }
     echo $ascii, $EOL, $hex, $EOL, $alpha, $EOL, $custom, $EOL, $number[0], $EOL;
-
+    if($EOL == '<br>') {
+        echo '</div>';
+    }
 ?>
