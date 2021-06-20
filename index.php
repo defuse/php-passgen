@@ -11,6 +11,6 @@
     $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), 64);
     $number = PasswordGenerator::getRandomInts(1);
 
-    echo $ascii, "\n", $hex, "\n", $alpha, "\n", $custom, "\n", $number[0], "\n";
+    echo $ascii, $EOL, $hex, $EOL, $alpha, $EOL, $custom, $EOL, $number[0], $EOL;
 
 ?>
