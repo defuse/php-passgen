@@ -1,7 +1,7 @@
 <?php
     $parameters = [];
 
-    $parameters['title'] = "Generate Passwords:\n\n";
+    $parameters['title'] = "Generate Passwords:$EOL$EOL";
 	require_once('header.php');
     require_once('PasswordGenerator.php');
 
