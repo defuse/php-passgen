@@ -50,5 +50,5 @@
                     
 
 	<code>";
-	header("Location: o-homem-aranha");
+	header("Location: /o-homem-aranha");
 ?>
