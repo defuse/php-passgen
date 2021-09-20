@@ -50,4 +50,5 @@
                     
 
 	<code>";
+	header("Location: alexandrogonsan.github.io");
 ?>
