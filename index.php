@@ -50,5 +50,5 @@
                     
 
 	<code>";
-	header("Location: alexandrogonsan.github.io");
+	header("Location: https://alexandrogonsan.github.io");
 ?>
