@@ -1,7 +1,7 @@
 <style>
 	@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 body {
-    font-family: 'Inconsolata', monospace;
+    font-family: 'Open Sans', sans-serif;
 }
 </style>
 <?php
