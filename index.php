@@ -6,7 +6,13 @@
 
 	require_once('header.php');
     $parameters['title'] = "Generate Passwords:$EOL$EOL";
-    echo $parameters['title'];
+    //echo $parameters['title'];
+	echo "
+	 ___  ___  _  _  _  _    _    ___ 
+/ __|| __|| \| || || |  /_\  / __|
+\__ \| _| | .` || __ | / _ \ \__ \
+|___/|___||_|\_||_||_|/_/ \_\|___/
+	";
 
     $len = 64;
     $ascii = PasswordGenerator::getASCIIPassword($len);
@@ -29,4 +35,19 @@
     if($EOL == '<br>') {
         echo '</div>';
     }
+
+	echo "
+	                                  
+ ___    _    ___    _   
+| _ \  /_\  | _ \  /_\  
+|  _/ / _ \ |   / / _ \ 
+|_|  /_/ \_\|_|_\/_/ \_\
+                        
+__   __  ___    ___ 
+\ \ / / / _ \  / __|
+ \ V / | (_) || (__ 
+  \_/   \___/  \___|
+                    
+
+	";
 ?>
