@@ -7,12 +7,12 @@
 	require_once('header.php');
     $parameters['title'] = "Generate Passwords:$EOL$EOL";
     //echo $parameters['title'];
-	echo "$EOL
+	echo "<code>$EOL
 	 ___  ___  _  _  _  _    _    ___  $EOL
  / __|| __|| \| || || |  /_\  / __| $EOL
  \__ \| _| | .` || __ | / _ \ \__ \ $EOL
  |___/|___||_|\_||_||_|/_/ \_\|___/ $EOL
-	";
+	<code>";
 
     $len = 64;
     $ascii = PasswordGenerator::getASCIIPassword($len);
@@ -36,7 +36,7 @@
         echo '</div>';
     }
 
-	echo "
+	echo "<code>
 	                                  
   ___    _    ___    _    $EOL
  | _ \  /_\  | _ \  /_\   $EOL
@@ -49,5 +49,5 @@
    \_/   \___/  \___| $EOL
                     
 
-	";
+	<code>";
 ?>
