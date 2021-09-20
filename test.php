@@ -1,11 +1,9 @@
 <?php
-    require_once('PasswordGenerator.php');
-    echo "Sample Passwords:\n\n";
-    $ascii = PasswordGenerator::getASCIIPassword(64);
-    $hex = PasswordGenerator::getHexPassword(64);
-    $alpha = PasswordGenerator::getAlphaNumericPassword(64);
-    $custom = PasswordGenerator::getCustomPassword(array('a', 'b'), 64);
-    echo $ascii, "\n", $hex, "\n", $alpha, "\n", $custom, "\n\n";
+    $parameters = [];
+    
+	require_once('header.php');
+    $parameters['title'] = "Sample Passwords:\n\n";
+    echo $parameters['title'];
 
     function failTest($msg)
     {
