@@ -16,6 +16,13 @@ functions instead:
 - PHP 5: the same, with [paragonie/random_compat](https://github.com/paragonie/random_compat)
   providing `random_int()`
 
+All of these pick bytes, not characters, and nothing checks the input for you:
+`$characters` must be distinct single-byte (ASCII) characters. A multi-byte
+character like UTF-8 `"ä"` gets split into its separate bytes, and a duplicated
+character is picked more often. Also create the `Randomizer` with no engine
+argument, so it uses the secure default (`Random\Engine\Secure`): engines like
+`Random\Engine\Mt19937` are seedable and predictable.
+
 Requirements
 ------------
 
