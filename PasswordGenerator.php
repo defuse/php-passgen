@@ -51,20 +51,51 @@ class PasswordGenerator
         return self::getCustomPassword(str_split($hex), $length);
     }
 
-    /* 
-     * Create a random password composed of a custom character set.
-     * $characterSet - An *array* of strings the password can be composed of.
-     * $length - The number of random strings (in $characterSet) to include in the password.
-     * Returns false on error (always check!).
+    /*
+     * Create a random password from a custom character set.
+     * $characterSet - An array of at least 2 distinct single-byte strings, such
+     *                 as str_split("abc123"). Its keys are ignored. Multi-byte
+     *                 characters (like UTF-8 "ä") and multi-character elements
+     *                 (like words) are rejected.
+     * $length - The number of characters in the password, as a positive int.
+     * Throws InvalidArgumentException if an argument breaks these rules, and
+     * RandomSourceFailureException if no secure random source is available.
+     * It never returns a weaker password than the arguments ask for.
      */
     public static function getCustomPassword($characterSet, $length)
     {
-        if($length < 1 || !is_array($characterSet))
-            return false;
+        if (!is_int($length) || $length < 1) {
+            throw new InvalidArgumentException("Password length must be a positive int.");
+        }
+        if (!is_array($characterSet)) {
+            throw new InvalidArgumentException("Character set must be an array of single-byte strings.");
+        }
 
+        // Re-index so the keys are 0..n-1 whatever keys the caller's array has
+        // (e.g. after array_diff() or array_filter()). The lookup below reads
+        // keys 0..n-1, so other keys would turn into NUL bytes.
+        $characterSet = array_values($characterSet);
         $charSetLen = count($characterSet);
-        if($charSetLen == 0)
-            return false;
+
+        // Each element must be exactly one byte. The lookup below copies one
+        // byte per element, and $length counts bytes, so anything longer would
+        // be silently truncated (giving far weaker passwords) or miscounted.
+        foreach ($characterSet as $i => $element) {
+            if (!is_string($element) || self::safeStrlen($element) !== 1) {
+                throw new InvalidArgumentException(
+                    "Character set element $i is not a single-byte string. Multi-byte " .
+                    "characters and multi-character elements (such as words) are not supported."
+                );
+            }
+        }
+        if ($charSetLen < 2) {
+            throw new InvalidArgumentException("Character set must contain at least 2 characters.");
+        }
+        if (count(array_unique($characterSet)) !== $charSetLen) {
+            throw new InvalidArgumentException(
+                "Character set contains duplicates, which would make some characters more likely than others."
+            );
+        }
 
         $random = self::getRandomInts($length * 2);
         $mask = self::getMinimalBitMask($charSetLen - 1); 
@@ -84,16 +115,21 @@ class PasswordGenerator
         {
             if($randIdx >= count($random))
             {
-                $random = self::getRandomInts(2*($length - strlen($password)));
+                $random = self::getRandomInts(2*($length - self::safeStrlen($password)));
                 $randIdx = 0;
             }
 
             // This is wasteful, but RNGs are fast and doing otherwise adds complexity and bias.
             $c = $random[$randIdx++] & $mask;
             // Only use the random number if it is in range, otherwise try another (next iteration).
-            if($c < $charSetLen)
-                $password .= self::sidechannel_safe_array_index($characterSet, $c);
-            // FIXME: check the return value
+            if($c < $charSetLen) {
+                $picked = self::sidechannel_safe_array_index($characterSet, $c);
+                if ($picked === false) {
+                    // Unreachable with a validated set and an in-range index.
+                    throw new LogicException("Character lookup failed.");
+                }
+                $password .= $picked;
+            }
 
             // Guarantee termination
             $iterLimit--;
@@ -105,18 +141,28 @@ class PasswordGenerator
         return $password;
     }
 
-    // FIXME: This function needs unit tests!
+    // Returns a uniformly random int from $min_inclusive to $max_inclusive.
+    // Both bounds must be ints, and $max_inclusive - $min_inclusive can be at
+    // most PHP_INT_MAX. Throws InvalidArgumentException otherwise.
     public static function getRandomInt($min_inclusive, $max_inclusive)
     {
+        if (!is_int($min_inclusive) || !is_int($max_inclusive)) {
+            throw new InvalidArgumentException("min and max must be ints.");
+        }
         if ($min_inclusive > $max_inclusive) {
             throw new InvalidArgumentException("min is greater than max.");
         }
-
-        if ($min_inclusive == $max_inclusive) {
+        if ($min_inclusive === $max_inclusive) {
             return $min_inclusive;
         }
 
+        // PHP ints overflow to floats, so a range wider than PHP_INT_MAX shows
+        // up here as a non-int. Each random int has only PHP_INT_MAX + 1
+        // possible values, so a wider range couldn't be covered uniformly.
         $range = $max_inclusive - $min_inclusive;
+        if (!is_int($range)) {
+            throw new InvalidArgumentException("max - min must be at most PHP_INT_MAX.");
+        }
         $mask = self::getMinimalBitMask($range);
 
         $random = self::getRandomInts(10);
@@ -142,29 +188,35 @@ class PasswordGenerator
         }
     }
 
-    // Returns the character at index $index in $string in constant time.
-    private static function sidechannel_safe_array_index($string, $index)
+    // Returns $set[$index] without branching on $index or using it as an array
+    // index, so the choice doesn't leak through timing. $set must be a list
+    // (keys 0..n-1) of single-byte strings, as getCustomPassword() guarantees.
+    // Returns false if $set is too large or $index is out of range.
+    private static function sidechannel_safe_array_index($set, $index)
     {
-        // FIXME: Make the const-time hack below work for all integer sizes, or
-        // check it properly.
-        if (count($string) > 65535 || $index > count($string)) {
+        // The mask trick below is only correct when $i ^ $index fits in 16
+        // bits, which these bounds guarantee.
+        $count = count($set);
+        if ($count > 65535 || $index < 0 || $index >= $count) {
             return false;
         }
         $character = 0;
-        for ($i = 0; $i < count($string); $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $x = $i ^ $index;
             $mask = (((($x | ($x >> 16)) & 0xFFFF) + 0xFFFF) >> 16) - 1;
-            $character |= ord($string[$i]) & $mask;
+            $character |= ord($set[$i]) & $mask;
         }
         return chr($character);
     }
 
     // Returns the smallest bit mask of all 1s such that ($toRepresent & mask) = $toRepresent.
-    // $toRepresent must be an integer greater than or equal to 1.
+    // $toRepresent must be an int greater than or equal to 1.
     private static function getMinimalBitMask($toRepresent)
     {
-        if($toRepresent < 1) {
-            throw new InvalidArgumentException("Non-positive integer passed to getMinimalBitMask.");
+        // The int check guarantees the loop ends: no int exceeds PHP_INT_MAX,
+        // which is itself all 1s. (With a float it could loop forever.)
+        if (!is_int($toRepresent) || $toRepresent < 1) {
+            throw new InvalidArgumentException("getMinimalBitMask() needs a positive int.");
         }
         $mask = 0x1;
         while($mask < $toRepresent) {
@@ -174,13 +226,22 @@ class PasswordGenerator
     }
 
     // Returns an array of $numInts random integers between 0 and PHP_INT_MAX
+    // (an empty array if $numInts <= 0). $numInts must be an int.
     public static function getRandomInts($numInts)
     {
+        if (!is_int($numInts)) {
+            throw new InvalidArgumentException("Number of random ints must be an int.");
+        }
         $ints = array();
         if ($numInts <= 0) {
             return $ints;
         }
-        $rawBinary = self::getRandomBytes($numInts * PHP_INT_SIZE);
+        $numBytes = $numInts * PHP_INT_SIZE;
+        if (!is_int($numBytes)) {
+            // The multiplication overflowed to a float.
+            throw new InvalidArgumentException("Too many random ints requested.");
+        }
+        $rawBinary = self::getRandomBytes($numBytes);
         for($i = 0; $i < $numInts; ++$i)
         {
             $thisInt = 0;
@@ -188,7 +249,7 @@ class PasswordGenerator
             {
                 $thisInt = ($thisInt << 8) | (ord($rawBinary[$i * PHP_INT_SIZE + $j]) & 0xFF);
             }
-            // Absolute value in two's compliment (with min int going to zero)
+            // Clear the sign bit, leaving a uniform value from 0 to PHP_INT_MAX.
             $thisInt = $thisInt & PHP_INT_MAX;
             $ints[] = $thisInt;
         }
@@ -212,14 +273,27 @@ class PasswordGenerator
                 );
             }
         } elseif (self::isNativeFunction('mcrypt_create_iv')) {
+            // Unlike random_bytes(), mcrypt_create_iv() never checks that
+            // /dev/urandom really is a device: if it's a regular file (say, in
+            // a badly built chroot) it returns that file's contents. So insist
+            // on a character device ourselves. stat() follows symlinks, which
+            // matters on e.g. Solaris. On Windows mcrypt uses CryptGenRandom.
+            if (DIRECTORY_SEPARATOR !== '\\') {
+                $st = @stat('/dev/urandom');
+                if ($st === false || ($st['mode'] & 0170000) !== 0020000) {
+                    throw new RandomSourceFailureException(
+                        "/dev/urandom is missing, unreadable, or not a character device."
+                    );
+                }
+            }
             // On failure this only raises a warning and returns false, so the
             // check below is what keeps a failed read from becoming all-zero
             // "random" data (and therefore single-character passwords).
             $bytes = mcrypt_create_iv($numBytes, MCRYPT_DEV_URANDOM);
         } else {
             throw new RandomSourceFailureException(
-                "No secure random source available. Use PHP 7+, or install " .
-                "the mcrypt extension on PHP 5."
+                "No secure random source available: random_bytes() is missing " .
+                "or disabled, and the mcrypt extension isn't loaded."
             );
         }
 
@@ -243,9 +317,17 @@ class PasswordGenerator
         return $reflection->isInternal();
     }
 
+    // Returns the length of $str in bytes. With mbstring.func_overload (PHP < 8)
+    // strlen() can count characters instead; mb_strlen() with '8bit' can't. A
+    // userland mb_strlen() (e.g. a polyfill) isn't trusted, but then mbstring
+    // isn't loaded, so nothing can have overloaded strlen() either.
     public static function safeStrlen($str)
     {
-        if (function_exists('mb_strlen')) {
+        static $useMbStrlen = null;
+        if ($useMbStrlen === null) {
+            $useMbStrlen = self::isNativeFunction('mb_strlen');
+        }
+        if ($useMbStrlen) {
             return mb_strlen($str, '8bit');
         }
         return strlen($str);
