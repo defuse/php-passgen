@@ -5,12 +5,26 @@ php-passgen
 
 A MIT-licensed library for generating cryptographically secure passwords in PHP.
 
+**Deprecated: don't use this library in new code.** It is no longer maintained.
+Earlier versions have bugs that can silently produce weak passwords (see
+[PR #18](https://github.com/defuse/php-passgen/pull/18)). This release fixes
+the known ones for existing users, but you should move to PHP's built-in
+functions instead:
+
+- PHP 8.3+: `(new \Random\Randomizer())->getBytesFromString($characters, $length)`
+- PHP 7+: pick each character with `$characters[random_int(0, strlen($characters) - 1)]`
+- PHP 5: the same, with [paragonie/random_compat](https://github.com/paragonie/random_compat)
+  providing `random_int()`
+
 Requirements
 ------------
 
 PHP 7 or later, or PHP 5.3 or later with the mcrypt extension. Randomness comes
 only from PHP 7's built-in `random_bytes()` or, on PHP 5, from mcrypt reading
 `/dev/urandom` (CryptGenRandom on Windows). There is no weaker fallback.
+
+On PHP 5, if `open_basedir` is set, it must include `/dev/urandom`. Otherwise
+every call throws `RandomSourceFailureException`.
 
 Usage
 -----

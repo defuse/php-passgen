@@ -282,7 +282,8 @@ class PasswordGenerator
                 $st = @stat('/dev/urandom');
                 if ($st === false || ($st['mode'] & 0170000) !== 0020000) {
                     throw new RandomSourceFailureException(
-                        "/dev/urandom is missing, unreadable, or not a character device."
+                        "/dev/urandom is missing, unreadable, or not a character device. " .
+                        "If open_basedir is set, it must include /dev/urandom."
                     );
                 }
             }
