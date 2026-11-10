@@ -231,13 +231,12 @@ class PasswordGenerator
         if ($numInts <= 0) {
             return $ints;
         }
-        // Read at least 2 ints' worth (8 or more bytes), so the constant-output
-        // check in getRandomBytes() has a false-alarm chance of at most 2^-56.
-        $numBytes = max($numInts, 2) * PHP_INT_SIZE;
+        $numBytes = $numInts * PHP_INT_SIZE;
         if (!is_int($numBytes)) {
             // The multiplication overflowed to a float.
             throw new InvalidArgumentException("Too many random ints requested.");
         }
+        self::selfTestRandomSource();
         $rawBinary = self::getRandomBytes($numBytes);
         for($i = 0; $i < $numInts; ++$i)
         {
@@ -311,19 +310,34 @@ class PasswordGenerator
                 "Could not read enough random bytes from the system RNG."
             );
         }
+        return $bytes;
+    }
 
-        // A character device that isn't random, like /dev/zero mounted over
-        // /dev/urandom, gives constant output. The Linux check above catches
-        // that for mcrypt, but random_bytes() also reads /dev/urandom when
-        // getrandom() isn't available (e.g. Linux before 3.17), and PHP only
-        // checks that it's a character device. getRandomInts() always asks for
-        // at least 8 bytes, so a real RNG trips this with probability <= 2^-56.
-        if ($bytes === str_repeat($bytes[0], $numBytes)) {
+    // Checks, once per process, that the random source isn't obviously broken
+    // before any of its output is used. A character device that isn't random,
+    // like /dev/zero mounted over /dev/urandom, passes every other check. The
+    // Linux device check in getRandomBytes() catches that for mcrypt, but
+    // random_bytes() also reads /dev/urandom when getrandom() isn't available
+    // (e.g. Linux before 3.17), and PHP only checks that it's a character
+    // device. Two 32-byte reads that are all zeros, or identical to each
+    // other, mean the source is broken; a real RNG does that with probability
+    // around 2^-255. Throws RandomSourceFailureException.
+    private static function selfTestRandomSource()
+    {
+        static $passed = false;
+        if ($passed) {
+            return;
+        }
+        $zeros = str_repeat("\0", 32);
+        $first = self::getRandomBytes(32);
+        $second = self::getRandomBytes(32);
+        if ($first === $zeros || $second === $zeros || $first === $second) {
             throw new RandomSourceFailureException(
-                "The system RNG returned constant output, so it can't be trusted."
+                "The system RNG failed a self-test (it returned all zeros, or the " .
+                "same bytes twice), so it can't be trusted."
             );
         }
-        return $bytes;
+        $passed = true;
     }
 
     // True only for functions compiled into PHP or an extension. A userland
