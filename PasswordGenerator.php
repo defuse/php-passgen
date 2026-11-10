@@ -108,6 +108,13 @@ class PasswordGenerator
         $randIdx = 0;
         while(self::safeStrlen($password) < $length)
         {
+            // Guarantee termination. Checked before each draw, so a password
+            // that is completed by the last allowed draw is still returned.
+            if($iterLimit <= 0) {
+                throw new ExtremelyUnlikelyRandomnessException("Hit iteration limit when generating password.");
+            }
+            $iterLimit--;
+
             if($randIdx >= count($random))
             {
                 $random = self::getRandomInts(2*($length - self::safeStrlen($password)));
@@ -124,12 +131,6 @@ class PasswordGenerator
                     throw new LogicException("Character lookup failed.");
                 }
                 $password .= $picked;
-            }
-
-            // Guarantee termination
-            $iterLimit--;
-            if($iterLimit <= 0) {
-                throw new ExtremelyUnlikelyRandomnessException("Hit iteration limit when generating password.");
             }
         }
 
@@ -184,9 +185,12 @@ class PasswordGenerator
     }
 
     // Returns $set[$index] without branching on $index or using it as an array
-    // index, so the choice doesn't leak through timing. $set must be a list
-    // (keys 0..n-1) of single-byte strings, as getCustomPassword() guarantees.
-    // Returns false if $set is too large or $index is out of range.
+    // index, to reduce what the choice leaks through timing. This is best
+    // effort, not a constant-time guarantee: chr() below looks the result up
+    // in PHP's table of one-character strings, which is indexed by the chosen
+    // byte. $set must be a list (keys 0..n-1) of single-byte strings, as
+    // getCustomPassword() guarantees. Returns false if $set is too large or
+    // $index is out of range.
     private static function sidechannel_safe_array_index($set, $index)
     {
         // The mask trick below is only correct when $i ^ $index fits in 16
