@@ -29,6 +29,7 @@
  */
 
 class ExtremelyUnlikelyRandomnessException extends Exception {}
+class RandomSourceFailureException extends Exception {}
 
 class PasswordGenerator
 {
@@ -179,7 +180,7 @@ class PasswordGenerator
         if ($numInts <= 0) {
             return $ints;
         }
-        $rawBinary = mcrypt_create_iv($numInts * PHP_INT_SIZE, MCRYPT_DEV_URANDOM);
+        $rawBinary = self::getRandomBytes($numInts * PHP_INT_SIZE);
         for($i = 0; $i < $numInts; ++$i)
         {
             $thisInt = 0;
@@ -193,7 +194,55 @@ class PasswordGenerator
         }
         return $ints;
     }
-    
+
+    // Returns a string of $numBytes bytes from the operating system's CSPRNG.
+    // Uses PHP 7's native random_bytes(), falling back to ext-mcrypt's
+    // mcrypt_create_iv() with MCRYPT_DEV_URANDOM on PHP 5. There is no other
+    // fallback: if neither is available, or the read fails or comes up short,
+    // this throws RandomSourceFailureException rather than return anything.
+    // $numBytes must be a positive integer.
+    private static function getRandomBytes($numBytes)
+    {
+        if (self::isNativeFunction('random_bytes')) {
+            try {
+                $bytes = random_bytes($numBytes);
+            } catch (Exception $e) {
+                throw new RandomSourceFailureException(
+                    "random_bytes() failed: " . $e->getMessage(), 0, $e
+                );
+            }
+        } elseif (self::isNativeFunction('mcrypt_create_iv')) {
+            // On failure this only raises a warning and returns false, so the
+            // check below is what keeps a failed read from becoming all-zero
+            // "random" data (and therefore single-character passwords).
+            $bytes = mcrypt_create_iv($numBytes, MCRYPT_DEV_URANDOM);
+        } else {
+            throw new RandomSourceFailureException(
+                "No secure random source available. Use PHP 7+, or install " .
+                "the mcrypt extension on PHP 5."
+            );
+        }
+
+        if (!is_string($bytes) || self::safeStrlen($bytes) !== $numBytes) {
+            throw new RandomSourceFailureException(
+                "Could not read enough random bytes from the system RNG."
+            );
+        }
+        return $bytes;
+    }
+
+    // True only for functions compiled into PHP or an extension. A userland
+    // function of the same name (e.g. a polyfill built on mt_rand()) can't be
+    // trusted to be cryptographically secure, so it is never used.
+    private static function isNativeFunction($name)
+    {
+        if (!function_exists($name)) {
+            return false;
+        }
+        $reflection = new ReflectionFunction($name);
+        return $reflection->isInternal();
+    }
+
     public static function safeStrlen($str)
     {
         if (function_exists('mb_strlen')) {
