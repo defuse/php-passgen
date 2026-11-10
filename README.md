@@ -20,11 +20,13 @@ Requirements
 ------------
 
 PHP 7 or later, or PHP 5.3 or later with the mcrypt extension. Randomness comes
-only from PHP 7's built-in `random_bytes()` or, on PHP 5, from mcrypt reading
-`/dev/urandom` (CryptGenRandom on Windows). There is no weaker fallback.
+only from PHP 7's built-in `random_bytes()` or, without it (on PHP 5, or on PHP
+7.0/7.1 with `random_bytes` disabled), from mcrypt reading `/dev/urandom`
+(CryptGenRandom on Windows). There is no weaker fallback.
 
-On PHP 5, if `open_basedir` is set, it must include `/dev/urandom`. Otherwise
-every call throws `RandomSourceFailureException`.
+When mcrypt is used, `open_basedir` (if set) must include `/dev/urandom`, and
+on PHP 5.3 `safe_mode` must be off. Otherwise every call throws
+`RandomSourceFailureException`.
 
 Usage
 -----

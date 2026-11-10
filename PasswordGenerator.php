@@ -236,7 +236,9 @@ class PasswordGenerator
         if ($numInts <= 0) {
             return $ints;
         }
-        $numBytes = $numInts * PHP_INT_SIZE;
+        // Read at least 2 ints' worth (8 or more bytes), so the constant-output
+        // check in getRandomBytes() has a false-alarm chance of at most 2^-56.
+        $numBytes = max($numInts, 2) * PHP_INT_SIZE;
         if (!is_int($numBytes)) {
             // The multiplication overflowed to a float.
             throw new InvalidArgumentException("Too many random ints requested.");
@@ -282,15 +284,26 @@ class PasswordGenerator
                 $st = @stat('/dev/urandom');
                 if ($st === false || ($st['mode'] & 0170000) !== 0020000) {
                     throw new RandomSourceFailureException(
-                        "/dev/urandom is missing, unreadable, or not a character device. " .
-                        "If open_basedir is set, it must include /dev/urandom."
+                        "/dev/urandom is missing, isn't a character device, or can't be " .
+                        "checked: open_basedir (if set) must include /dev/urandom, and on " .
+                        "PHP 5.3 safe_mode must be off."
+                    );
+                }
+                // On Linux, also insist on the kernel's random devices (1:9 is
+                // /dev/urandom, 1:8 is /dev/random). Another character device
+                // mounted there, like /dev/zero, would give constant output,
+                // and /dev/null would make PHP 5's mcrypt loop forever.
+                if (PHP_OS === 'Linux' && $st['rdev'] !== 265 && $st['rdev'] !== 264) {
+                    throw new RandomSourceFailureException(
+                        "/dev/urandom isn't the kernel's random device."
                     );
                 }
             }
-            // On failure this only raises a warning and returns false, so the
-            // check below is what keeps a failed read from becoming all-zero
-            // "random" data (and therefore single-character passwords).
-            $bytes = mcrypt_create_iv($numBytes, MCRYPT_DEV_URANDOM);
+            // On failure this returns false, so the check below is what keeps a
+            // failed read from becoming all-zero "random" data. The @ stops its
+            // warning from reaching error handlers that turn warnings into
+            // exceptions, so the failure surfaces as RandomSourceFailureException.
+            $bytes = @mcrypt_create_iv($numBytes, MCRYPT_DEV_URANDOM);
         } else {
             throw new RandomSourceFailureException(
                 "No secure random source available: random_bytes() is missing " .
@@ -301,6 +314,18 @@ class PasswordGenerator
         if (!is_string($bytes) || self::safeStrlen($bytes) !== $numBytes) {
             throw new RandomSourceFailureException(
                 "Could not read enough random bytes from the system RNG."
+            );
+        }
+
+        // A character device that isn't random, like /dev/zero mounted over
+        // /dev/urandom, gives constant output. The Linux check above catches
+        // that for mcrypt, but random_bytes() also reads /dev/urandom when
+        // getrandom() isn't available (e.g. Linux before 3.17), and PHP only
+        // checks that it's a character device. getRandomInts() always asks for
+        // at least 8 bytes, so a real RNG trips this with probability <= 2^-56.
+        if ($bytes === str_repeat($bytes[0], $numBytes)) {
+            throw new RandomSourceFailureException(
+                "The system RNG returned constant output, so it can't be trusted."
             );
         }
         return $bytes;

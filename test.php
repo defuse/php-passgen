@@ -1,6 +1,4 @@
 <?php
-    require_once('PasswordGenerator.php');
-
     function failTest($msg)
     {
         echo "FAILED: $msg\n";
@@ -18,6 +16,10 @@
     }
     error_reporting(-1);
     set_error_handler('failOnError');
+
+    // Loaded after the error handler, so notices raised while compiling the
+    // library fail the tests too.
+    require_once('PasswordGenerator.php');
 
     // Fails unless $fn throws an exception of class $class.
     function expectThrows($class, $description, $fn)
